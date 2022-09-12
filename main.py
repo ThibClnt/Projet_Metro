@@ -71,10 +71,15 @@ class Graph:
         :param dest: Vertex
         :param weight: float
         """
-        if origin not in self.edges.keys() and dest not in self.edges.keys():
-            raise AttributeError(f"({origin} ; {dest}) n'est pas une paire de sommets valide.")
+        if origin.name not in self.edges.keys() or dest.name not in self.edges.keys():
+            raise AttributeError(f"({origin.name} ; {dest.name}) n'est pas une paire de sommets valide.")
 
-        self.edges[origin][dest] = weight
+        self.edges[origin.name][dest.name] = weight
+
+
+    def modelisation_graph(self):
+        return self.edges
+    
 
     def find(self, vertex):
         """
