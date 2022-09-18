@@ -1,33 +1,9 @@
 import matplotlib.patches
 import matplotlib.pyplot
 import math
+import os
+import sys
 
-
-############################################
-# Extraction des données - Parsing         #
-############################################
-
-# TODO : Changer l'adresse du fichier en chemin relatif
-def data():
-    """
-    # Retourne 4 listes : noms des stations, sommet 1, sommet 2, temps entre sommet 1 et 2
-    """
-    list_station = []
-    vertex_1 = []
-    vertex_2 = []
-    time = []
-    with open(r"C:\Users\kekel\Documents\Efrei\Maths pour l'info\metro.txt", "r") as file:
-        for line in file:
-            if "V " in line and "num_sommet" not in line:
-                line_vertex = line.split()
-                list_station += [line_vertex[2]]
-            elif "E " in line and "num_sommet1" not in line:
-                line_edge = line.split()
-                vertex_1 += [int(line_edge[1])]
-                vertex_2 += [int(line_edge[2])]
-                time += [int(line_edge[3])]
-
-    return list_station, vertex_1, vertex_2, time
 
 
 ############################################
@@ -61,8 +37,14 @@ class Graph:
         """
         # Arêtes du graphe sous la forme : {pt_de_depart: {pt_darrive: poids}}
         self.edges = {
-            vertex.name: dict() for vertex in vertices
+            vertex : dict() for vertex in vertices
         }
+        self.vertices = vertices
+
+    
+    def add_vertex(self,vertex):
+        self.vertices += [vertex]
+        self.edges[vertex] = dict()
 
     def add_edge(self, origin, dest, weight):
         """
@@ -71,14 +53,12 @@ class Graph:
         :param dest: Vertex
         :param weight: float
         """
-        if origin.name not in self.edges.keys() or dest.name not in self.edges.keys():
+        if origin not in self.edges.keys() or dest not in self.edges.keys():
             raise AttributeError(f"({origin.name} ; {dest.name}) n'est pas une paire de sommets valide.")
 
-        self.edges[origin.name][dest.name] = weight
+        self.edges[origin][dest] = weight
 
 
-    def modelisation_graph(self):
-        return self.edges
     
 
     def find(self, vertex):
@@ -164,6 +144,49 @@ class Stop(Vertex):
         """
         return self.x - radius < x < self.x + radius and self.y - radius < y < self.y + radius
 
+############################################
+# Extraction des données - Parsing         #
+############################################
+
+# TODO : Changer l'adresse du fichier en chemin relatif
+
+def data_graph(): 
+    """ Retourne directement le Graphe du métro"""
+
+
+    Graph_metro = NonOrientedGraph([])
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metro.txt"), "r") as file:
+        for line in file:
+            if "V " in line and "num_sommet" not in line:
+                line_vertex = line.split()
+                vertex = Vertex(" ".join(line_vertex[2:-3]))
+                Graph_metro.add_vertex(vertex)           
+            elif "E " in line and "num_sommet1" not in line:
+                line_edge = line.split()
+                Graph_metro.add_edge(Graph_metro.vertices[int(line_edge[1])],Graph_metro.vertices[int(line_edge[2])],int(line_edge[3]))
+        return Graph_metro
+
+            
+def data_coord():
+    dict_coord = dict()
+    """ structure : dict(nom sommet : (x,y)) """
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"pospoints.txt"), "r") as file:
+        for line in file:
+            line = line.split(";")
+            vertex_name = line[2].split("\n")[0]
+            vertex_name = " ".join(vertex_name.split("@"))
+            if vertex_name in dict_coord:
+                dict_coord[vertex_name] += [(line[0], line[1])]
+            else:
+                dict_coord[vertex_name] =[(line[0], line[1])]
+    return dict_coord
+    
+
+
+
+
+
+
 
 ############################################
 # Algorithmes                              #
@@ -248,3 +271,15 @@ if __name__ == '__main__':
         v.draw(ax, 5)
 
     matplotlib.pyplot.show()
+ 
+
+
+
+A = data_coord()
+print(len(list(A.keys())))
+print(A)
+B = data_graph()
+print(len(list(B.edges.keys())))
+
+
+
