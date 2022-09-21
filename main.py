@@ -1,10 +1,7 @@
-import matplotlib.patches
+import matplotlib.backend_bases
 import matplotlib.pyplot as plt
 import math
-import numpy as np
 import os
-import sys
-import tk as tk
 
 
 ############################################
@@ -19,7 +16,7 @@ class Vertex:
     """
     _unnamed_count = 0  # Compte le nombre d'objets non nommés, afin de leur donner un nom par défaut
 
-    def __init__(self, name=None, line = None,  branch = None, terminus = None):
+    def __init__(self, name=None, line=None, branch=None, terminus=None):
         self.name = Vertex._unnamed_count if name is None else name
         if name is None:
             Vertex._unnamed_count += 1
@@ -28,6 +25,7 @@ class Vertex:
         self.line = line
         self.branch = branch
         self.terminus = terminus
+
 
 class Graph:
     """
@@ -43,7 +41,6 @@ class Graph:
             vertex : dict() for vertex in vertices
         }
         self.vertices = vertices
-
     
     def add_vertex(self,vertex):
         self.vertices += [vertex]
@@ -60,9 +57,6 @@ class Graph:
             raise AttributeError(f"({origin.name} ; {dest.name}) n'est pas une paire de sommets valide.")
 
         self.edges[origin][dest] = weight
-
-
-    
 
     def find(self, vertex):
         """
@@ -182,10 +176,7 @@ def data_coord():
             line = line.split(";")
             vertex_name = line[2].split("\n")[0]
             vertex_name = " ".join(vertex_name.split("@"))
-            if vertex_name in dict_coord:
-                dict_coord[vertex_name] += [(line[0], line[1])]
-            else:
-                dict_coord[vertex_name] =[(line[0], line[1])]
+            dict_coord[(line[0], line[1])] = vertex_name
     return dict_coord
     
 
@@ -253,61 +244,55 @@ def shortest_path(summits, target_vertex, pred):
     return path
 
 
+def utilisation_dijkstra(pointa, pointb):
+    print(pointa, pointb)
+
+
 ############################################
 # Interface graphique                      #
 ############################################
 
 
-############################################
-# Point de départ & Tests                  #
-############################################
-# if __name__ == '__main__':
-#     ax: matplotlib.pyplot.Axes = matplotlib.pyplot.gca()
-#     matplotlib.pyplot.axis((0, 987, 0, 952))
-#     ax.set_aspect('equal')
+class Gui:
+    PCC = 1
+    ACPM = 2
 
-#     stops = [
-#         Stop(x, y)
-#         for x, y in ((907, 682),
-#                      (892, 669),
-#                      (876, 652))
-#     ]
-#     g = NonOrientedGraph(stops)
+    def __init__(self, path):
+        # Initialisation de l'affichage
+        self._init_display(path)
 
-#     for v in stops:
-#         v.draw(ax, 5)
+        self.start = None
+        self.end = None
+        self.mode = Gui.PCC
 
-#     matplotlib.pyplot.show()
- 
+        self.pos = data_coord()
+        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+        plt.show()
 
+    def _init_display(self, path):
+        im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), path))
+        self.fig, self.ax = plt.subplots(figsize=plt.figaspect(im))
+        self.fig.subplots_adjust(0, 0, 1, 1)
+        self.ax.imshow(im)
+        plt.axis('off')
 
+    def on_click(self, event):
+        if self.mode != Gui.PCC:
+            return
+        
+        ex, ey = event.xdata, event.ydata
+        for coord, vertex in self.pos.items():
+            x, y = float(coord[0]), float(coord[1])
+            if ((x - ex) ** 2 + (y - ey) ** 2) < 12:
+                if event.button == matplotlib.backend_bases.MouseButton.LEFT:
+                    self.start = vertex
+                elif event.button == matplotlib.backend_bases.MouseButton.RIGHT:
+                    self.end = vertex
 
-
-
-A = data_graph()
-for i in A.edges:
-    print(i.terminus)
-
-
-
-# def onclick(event):
-#     c_x = event.xdata
-#     c_y = event.ydata
-#     print(c_x)
-#     print(c_y)
-#     print("\n")
-#     return c_x,c_y
-
-# im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metrof_r.png"))
-# fig, ax = plt.subplots(figsize = plt.figaspect(im))
-# fig.canvas.mpl_connect('button_press_event', onclick)
-# fig.subplots_adjust(0,0,1,1)
-# ax.imshow(im)
-# # plt.axis('off')
-
-# # ax.scatter(589,696, s= 10)
-# plt.show()
+                if self.start is not None and self.end is not None:
+                    utilisation_dijkstra(self.start, self.end)
+                break
 
 
-
-
+if __name__ == '__main__':
+    Gui("metrof_r.png")
