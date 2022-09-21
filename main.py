@@ -1,9 +1,10 @@
 import matplotlib.patches
-import matplotlib.pyplot
+import matplotlib.pyplot as plt
 import math
+import numpy as np
 import os
 import sys
-
+import tk as tk
 
 
 ############################################
@@ -18,13 +19,15 @@ class Vertex:
     """
     _unnamed_count = 0  # Compte le nombre d'objets non nommés, afin de leur donner un nom par défaut
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, line = None,  branch = None, terminus = None):
         self.name = Vertex._unnamed_count if name is None else name
         if name is None:
             Vertex._unnamed_count += 1
         self.root = None
         self.rank = 0
-
+        self.line = line
+        self.branch = branch
+        self.terminus = terminus
 
 class Graph:
     """
@@ -156,13 +159,17 @@ def data_graph():
 
     Graph_metro = NonOrientedGraph([])
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metro.txt"), "r") as file:
-        for line in file:
-            if "V " in line and "num_sommet" not in line:
-                line_vertex = line.split()
-                vertex = Vertex(" ".join(line_vertex[2:-3]))
-                Graph_metro.add_vertex(vertex)           
-            elif "E " in line and "num_sommet1" not in line:
-                line_edge = line.split()
+        for line1 in file:
+            if "V " in line1 and "num_sommet" not in line1:
+                line_vertex = line1.split()
+                print(line_vertex)
+                val = line_vertex[-3][1]
+                val_branch = line_vertex[-1]
+                term = line_vertex[-2][1:]
+                vertex = Vertex(name = " ".join(line_vertex[2:-3]), line = val, branch = val_branch, terminus = term)
+                Graph_metro.add_vertex(vertex)
+            elif "E " in line1 and "num_sommet1" not in line1:
+                line_edge = line1.split()
                 Graph_metro.add_edge(Graph_metro.vertices[int(line_edge[1])],Graph_metro.vertices[int(line_edge[2])],int(line_edge[3]))
         return Graph_metro
 
@@ -254,32 +261,53 @@ def shortest_path(summits, target_vertex, pred):
 ############################################
 # Point de départ & Tests                  #
 ############################################
-if __name__ == '__main__':
-    ax: matplotlib.pyplot.Axes = matplotlib.pyplot.gca()
-    matplotlib.pyplot.axis((0, 987, 0, 952))
-    ax.set_aspect('equal')
+# if __name__ == '__main__':
+#     ax: matplotlib.pyplot.Axes = matplotlib.pyplot.gca()
+#     matplotlib.pyplot.axis((0, 987, 0, 952))
+#     ax.set_aspect('equal')
 
-    stops = [
-        Stop(x, y)
-        for x, y in ((907, 682),
-                     (892, 669),
-                     (876, 652))
-    ]
-    g = NonOrientedGraph(stops)
+#     stops = [
+#         Stop(x, y)
+#         for x, y in ((907, 682),
+#                      (892, 669),
+#                      (876, 652))
+#     ]
+#     g = NonOrientedGraph(stops)
 
-    for v in stops:
-        v.draw(ax, 5)
+#     for v in stops:
+#         v.draw(ax, 5)
 
-    matplotlib.pyplot.show()
+#     matplotlib.pyplot.show()
  
 
 
 
-A = data_coord()
-print(len(list(A.keys())))
-print(A)
-B = data_graph()
-print(len(list(B.edges.keys())))
+
+
+A = data_graph()
+for i in A.edges:
+    print(i.terminus)
+
+
+
+# def onclick(event):
+#     c_x = event.xdata
+#     c_y = event.ydata
+#     print(c_x)
+#     print(c_y)
+#     print("\n")
+#     return c_x,c_y
+
+# im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metrof_r.png"))
+# fig, ax = plt.subplots(figsize = plt.figaspect(im))
+# fig.canvas.mpl_connect('button_press_event', onclick)
+# fig.subplots_adjust(0,0,1,1)
+# ax.imshow(im)
+# # plt.axis('off')
+
+# # ax.scatter(589,696, s= 10)
+# plt.show()
+
 
 
 
