@@ -41,6 +41,7 @@ class Graph:
             vertex: dict() for vertex in vertices
         }
         self.vertices = vertices
+        self.acpm_fait = False  # Vrai lorsque l'acpm a été calculé
 
     def add_vertex(self, vertex):
         self.vertices += [vertex]
@@ -117,7 +118,6 @@ def data_graph():
         for line1 in file:
             if "V " in line1 and "num_sommet" not in line1:
                 line_vertex = line1.split()
-                print(line_vertex)
                 val = line_vertex[-3][1]
                 val_branch = line_vertex[-1]
                 term = line_vertex[-2][1:]
@@ -146,6 +146,21 @@ def data_coord():
 # Algorithmes                              #
 ############################################
 # TODO : Kruskal
+def kruskal(graph: Graph):
+    if graph.acpm_fait:
+        return
+
+    edges = []
+    for pt_depart in graph.edges.keys():
+        for pt_arrivee in graph.edges[pt_depart].keys():
+            edges.append([pt_depart, pt_arrivee, graph.edges[pt_depart][pt_arrivee]])
+
+    edges.sort(key=lambda e: e[2])
+
+    while edges:
+        orig, dest, _ = edges.pop(0)
+        if graph.find(orig) != graph.find(dest):
+            graph.union(orig, dest)
 
 
 # TODO: Dijskra: Renommage variables; Adaptation types de données ; Encapsulation
@@ -249,6 +264,20 @@ class Gui:
                     utilisation_dijkstra(self.start, self.end)
                 break
 
+    def switch_mode(self):
+        self.mode = 3 - self.mode
+        plt.clf()
+        self._init_display()
+
+        if self.mode == Gui.ACPM:
+            self.display_acpm()
+        elif self.mode == Gui.PCC:
+            self.start, self.end = None, None
+
+    def display_acpm(self):
+        pass
+
 
 if __name__ == '__main__':
-    Gui("metrof_r.png")
+    graph = data_graph()
+    kruskal(graph)
