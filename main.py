@@ -1,10 +1,8 @@
 import matplotlib.patches
 import matplotlib.pyplot as plt
 import math
+import numpy as np
 import os
-
-
-
 
 ############################################
 # Représentation des données - Abstraction #
@@ -157,13 +155,12 @@ def data_graph():
 
 
     Graph_metro = NonOrientedGraph([])
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metro.txt"), "r") as file:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metro.txt"), "r", encoding ="utf8") as file:
         for line1 in file:
             if "V " in line1 and "num_sommet" not in line1:
                 line_vertex = line1.split()
-                print(line_vertex)
-                val = line_vertex[-3][1]                # Numero de ligne
-                val_branch = line_vertex[-1]            # 0,1 ou 2 en fonctions des embranchements
+                val = line_vertex[-3][1:]           # Numero de ligne
+                val_branch = int(line_vertex[-1])       # 0,1 ou 2 en fonctions des embranchements
                 term = line_vertex[-2][1:]              # True or False en str
                 vertex = Vertex(name = " ".join(line_vertex[2:-3]), line = val, branch = val_branch, terminus = term)
                 Graph_metro.add_vertex(vertex)
@@ -260,52 +257,7 @@ def shortest_path(summit, target_vertex, pred):
 ############################################
 # Point de départ & Tests                  #
 ############################################
-# if __name__ == '__main__':
-#     ax: matplotlib.pyplot.Axes = matplotlib.pyplot.gca()
-#     matplotlib.pyplot.axis((0, 987, 0, 952))
-#     ax.set_aspect('equal')
 
-#     stops = [
-#         Stop(x, y)
-#         for x, y in ((907, 682),
-#                      (892, 669),
-#                      (876, 652))
-#     ]
-#     g = NonOrientedGraph(stops)
-
-#     for v in stops:
-#         v.draw(ax, 5)
-
-#     matplotlib.pyplot.show()
- 
-
-
-
-
-
-A = data_graph()
-for i in A.edges:
-    print(i.terminus)
-
-
-
-# def onclick(event):
-#     c_x = event.xdata
-#     c_y = event.ydata
-#     print(c_x)
-#     print(c_y)
-#     print("\n")
-#     return c_x,c_y
-
-# im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metrof_r.png"))
-# fig, ax = plt.subplots(figsize = plt.figaspect(im))
-# fig.canvas.mpl_connect('button_press_event', onclick)
-# fig.subplots_adjust(0,0,1,1)
-# ax.imshow(im)
-# # plt.axis('off')
-
-# # ax.scatter(589,696, s= 10)
-# plt.show()
 
 
 
@@ -313,30 +265,53 @@ for i in A.edges:
 # Dijkstra                                 #
 ############################################
 
-def terminus(graph):
+def liste_terminus(graph):
     liste_terminus = []
-    for vertex in graph.keys():
+    for vertex in graph.edges.keys():
         if vertex.terminus == "True":
             liste_terminus += [[vertex.name,vertex.line,vertex.branch]]
     return liste_terminus
 
+def name_terminus(branch,ligne, liste_terminus):
+    for liste in liste_terminus:
+        if liste[1] == ligne and liste[2] == branch:
+            return liste[0]
+
+def verif_embranchement(station1, station2, graph):
+    station = station2
+    station_pred = station1     
+    station_pred = [station1]
+    i = 0
+    
+    while station.terminus != "True" :
+        
+        for vertex in graph.edges[station]:
+            if vertex.line == station.line and vertex.branch == station.branch and vertex not in station_pred:
+                station_pred += [station]
+                station = vertex
+                
+            elif vertex.line == station.line and vertex.branch != station.branch and vertex in station_pred:
+                return True
+    return station
+
 # Interface renvoie nom des arrets de départ et d'arrivé"
 
-def utilisation_dijkstra(nom_depart, nom_arrive):
+def utilisation_dijkstra(nom_depart, nom_arrive,graph):
     # Liste des arrets de meme station mais pas meme ligne (ex : Chatellet)
-    graph_metro = data_graph()
     liste_depart = []
     liste_arrive = []
-    for vertex in graph_metro.edges.keys():
+    for vertex in graph.edges.keys():
         if vertex.name == nom_depart:
             liste_depart += [vertex]
         if vertex.name == nom_arrive:
             liste_arrive += [vertex]
 
-    temps = 0
+    temps = math.inf
+
     for vertex in liste_depart:
-        tuple = dijkstra(graph_metro.edges, vertex) # tuple = (dist, pred)
-        for vertex_1 in nom_arrive:
+        tuple = dijkstra(graph.edges, vertex) # tuple = (dist, pred)
+
+        for vertex_1 in liste_arrive:
             if tuple[0][vertex_1] < temps:
                 temps = tuple[0][vertex_1]
                 pred = tuple[1]
@@ -345,16 +320,46 @@ def utilisation_dijkstra(nom_depart, nom_arrive):
 
     
 
-    return shortest_path(vertex,vertex_1,pred)
+    return temps,shortest_path(vertex_depart,vertex_arrive,pred)
     
 
-    # while i < len(shortest_path):
-    #     vertex = shortest_path[i]
-    #     j = i
-    #     while vertex.line == shortest_path[j].line and vertex.branch == shortest_path[j].branch:
-    #         j+=1
 
-    #     i = j
-    #     print("Prendre la ligne",vertex.line,"direction", terminus.name,"à",vertex.name,"jusqu'à", shortest_path[i].name)
+def afficher_texte_parcours(tuple_result, graph):
+    temps = tuple_result[0]
+    shortest_path = tuple_result[1]
+    sec = temps%60
+    min = (temps -sec)/60
 
+    print("Le trajet durera",int(min),"m",sec,"s (",temps,"s)")
+    print("")
+    liste_term = liste_terminus(graph)
+    i = 0
+    while i < len(shortest_path):
+        vertex = shortest_path[i]
+        val = 0
+        while vertex.line == shortest_path[i].line and i < len(shortest_path)-1:
+            if shortest_path[i].line == shortest_path[i+1].line and shortest_path[i].branch != shortest_path[i+1].branch:
+                val = i+1
+            i += 1
+        if val == 0 and verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph) == True:
+            terminus = name_terminus(1,shortest_path[i-1].line,liste_term)
+            print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
+            print("")
+        elif val == 0 and  verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph) != True:
+            terminus = verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph).name
+            print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
+            print("")
+        elif val != 0:
+            terminus = name_terminus(shortest_path[val].branch,shortest_path[val].line,liste_term)
+            print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
+            print("")
+
+        
+        i+= 1
+    
+
+
+
+
+afficher_texte_parcours(utilisation_dijkstra("Pont-Neuf","Villejuif, Léo Lagrange",graph),graph)
 
