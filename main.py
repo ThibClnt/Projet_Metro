@@ -38,11 +38,11 @@ class Graph:
         """
         # Arêtes du graphe sous la forme : {pt_de_depart: {pt_darrive: poids}}
         self.edges = {
-            vertex : dict() for vertex in vertices
+            vertex: dict() for vertex in vertices
         }
         self.vertices = vertices
-    
-    def add_vertex(self,vertex):
+
+    def add_vertex(self, vertex):
         self.vertices += [vertex]
         self.edges[vertex] = dict()
 
@@ -104,55 +104,16 @@ class NonOrientedGraph(Graph):
 
 
 ############################################
-# Lien données -> interface graphique      #
-############################################
-
-# TODO : Doc
-class Stop(Vertex):
-    """
-    Représente un arrêt de métro, i.e. un sommet du graphe, qui peut être représenté sur la carte comme un point rouge,
-    et cliqué.
-    """
-
-    def __init__(self, x, y, name=None):
-        """
-        :param x: float - position horizontale, en px, sur l'image
-        :param y: float - position verticale, en px, sur l'image
-        :param name: str | None - nom de l'arrêt. Un id est donné par défaut, si aucun nom n'est donné
-        """
-        super().__init__(name)
-        self.x, self.y = x, y
-        self.artist = None
-
-    def draw(self, canvas: matplotlib.pyplot.Axes, radius=1):
-        """
-        Dessine l'arrêt sur la carte
-        :param canvas: matplotlib.pyplot.Axes - Objet graphique sur lequel dessiner l'arrêt
-        :param radius: float - rayon, en px, du cercle représentant l'arrêt
-        """
-        canvas.add_artist(matplotlib.patches.Circle((self.x, self.y), radius, color='red'))
-
-    def collide_with(self, x, y, radius=1):
-        """
-        Pour tester si l'arrêt a été cliqué
-        :param x: float - position, en px, de l'évenement
-        :param y: float - position, en px, de l'évenement
-        :param radius: float - rayon d'action, en px, de l'arrêt
-        """
-        return self.x - radius < x < self.x + radius and self.y - radius < y < self.y + radius
-
-############################################
 # Extraction des données - Parsing         #
 ############################################
 
 # TODO : Changer l'adresse du fichier en chemin relatif
 
-def data_graph(): 
+def data_graph():
     """ Retourne directement le Graphe du métro"""
 
-
-    Graph_metro = NonOrientedGraph([])
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metro.txt"), "r") as file:
+    graph_metro = NonOrientedGraph([])
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "metro.txt"), "r") as file:
         for line1 in file:
             if "V " in line1 and "num_sommet" not in line1:
                 line_vertex = line1.split()
@@ -160,30 +121,25 @@ def data_graph():
                 val = line_vertex[-3][1]
                 val_branch = line_vertex[-1]
                 term = line_vertex[-2][1:]
-                vertex = Vertex(name = " ".join(line_vertex[2:-3]), line = val, branch = val_branch, terminus = term)
-                Graph_metro.add_vertex(vertex)
+                vertex = Vertex(name=" ".join(line_vertex[2:-3]), line=val, branch=val_branch, terminus=term)
+                graph_metro.add_vertex(vertex)
             elif "E " in line1 and "num_sommet1" not in line1:
                 line_edge = line1.split()
-                Graph_metro.add_edge(Graph_metro.vertices[int(line_edge[1])],Graph_metro.vertices[int(line_edge[2])],int(line_edge[3]))
-        return Graph_metro
+                graph_metro.add_edge(graph_metro.vertices[int(line_edge[1])], graph_metro.vertices[int(line_edge[2])],
+                                     int(line_edge[3]))
+        return graph_metro
 
-            
+
 def data_coord():
     dict_coord = dict()
     """ structure : dict(nom sommet : (x,y)) """
-    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"pospoints.txt"), "r") as file:
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "pospoints.txt"), "r") as file:
         for line in file:
             line = line.split(";")
             vertex_name = line[2].split("\n")[0]
             vertex_name = " ".join(vertex_name.split("@"))
             dict_coord[(line[0], line[1])] = vertex_name
     return dict_coord
-    
-
-
-
-
-
 
 
 ############################################
@@ -279,7 +235,7 @@ class Gui:
     def on_click(self, event):
         if self.mode != Gui.PCC:
             return
-        
+
         ex, ey = event.xdata, event.ydata
         for coord, vertex in self.pos.items():
             x, y = float(coord[0]), float(coord[1])
