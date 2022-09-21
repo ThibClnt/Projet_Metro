@@ -1,8 +1,8 @@
 import matplotlib.patches
-import matplotlib.pyplot
+import matplotlib.pyplot as plt
 import math
 import os
-import sys
+
 
 
 
@@ -18,13 +18,15 @@ class Vertex:
     """
     _unnamed_count = 0  # Compte le nombre d'objets non nommés, afin de leur donner un nom par défaut
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, line = None,  branch = None, terminus = None):
         self.name = Vertex._unnamed_count if name is None else name
         if name is None:
             Vertex._unnamed_count += 1
         self.root = None
         self.rank = 0
-
+        self.line = line
+        self.branch = branch
+        self.terminus = terminus
 
 class Graph:
     """
@@ -156,13 +158,17 @@ def data_graph():
 
     Graph_metro = NonOrientedGraph([])
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metro.txt"), "r") as file:
-        for line in file:
-            if "V " in line and "num_sommet" not in line:
-                line_vertex = line.split()
-                vertex = Vertex(" ".join(line_vertex[2:-3]))
-                Graph_metro.add_vertex(vertex)           
-            elif "E " in line and "num_sommet1" not in line:
-                line_edge = line.split()
+        for line1 in file:
+            if "V " in line1 and "num_sommet" not in line1:
+                line_vertex = line1.split()
+                print(line_vertex)
+                val = line_vertex[-3][1]                # Numero de ligne
+                val_branch = line_vertex[-1]            # 0,1 ou 2 en fonctions des embranchements
+                term = line_vertex[-2][1:]              # True or False en str
+                vertex = Vertex(name = " ".join(line_vertex[2:-3]), line = val, branch = val_branch, terminus = term)
+                Graph_metro.add_vertex(vertex)
+            elif "E " in line1 and "num_sommet1" not in line1:
+                line_edge = line1.split()
                 Graph_metro.add_edge(Graph_metro.vertices[int(line_edge[1])],Graph_metro.vertices[int(line_edge[2])],int(line_edge[3]))
         return Graph_metro
 
@@ -205,7 +211,7 @@ def argmin_dict(dist):
     return argmin
 
 
-def dijkstra(graph, summits):
+def dijkstra(graph, summit):
     vertices = list(graph.keys())
     dist = {}
     pred = {}
@@ -213,7 +219,7 @@ def dijkstra(graph, summits):
         dist[i] = math.inf
         pred[i] = None
 
-    dist[summits] = 0
+    dist[summit] = 0
     vertices_copy = vertices
 
     while vertices_copy:
@@ -237,10 +243,10 @@ def dijkstra(graph, summits):
     return dist, pred
 
 
-def shortest_path(summits, target_vertex, pred):
+def shortest_path(summit, target_vertex, pred):
     arrive = pred[target_vertex]
     path = [arrive, target_vertex]
-    while arrive != summits:
+    while arrive != summit:
         arrive = pred[arrive]
         path = [arrive] + path
     return path
@@ -254,32 +260,101 @@ def shortest_path(summits, target_vertex, pred):
 ############################################
 # Point de départ & Tests                  #
 ############################################
-if __name__ == '__main__':
-    ax: matplotlib.pyplot.Axes = matplotlib.pyplot.gca()
-    matplotlib.pyplot.axis((0, 987, 0, 952))
-    ax.set_aspect('equal')
+# if __name__ == '__main__':
+#     ax: matplotlib.pyplot.Axes = matplotlib.pyplot.gca()
+#     matplotlib.pyplot.axis((0, 987, 0, 952))
+#     ax.set_aspect('equal')
 
-    stops = [
-        Stop(x, y)
-        for x, y in ((907, 682),
-                     (892, 669),
-                     (876, 652))
-    ]
-    g = NonOrientedGraph(stops)
+#     stops = [
+#         Stop(x, y)
+#         for x, y in ((907, 682),
+#                      (892, 669),
+#                      (876, 652))
+#     ]
+#     g = NonOrientedGraph(stops)
 
-    for v in stops:
-        v.draw(ax, 5)
+#     for v in stops:
+#         v.draw(ax, 5)
 
-    matplotlib.pyplot.show()
+#     matplotlib.pyplot.show()
  
 
 
 
-A = data_coord()
-print(len(list(A.keys())))
-print(A)
-B = data_graph()
-print(len(list(B.edges.keys())))
 
+
+A = data_graph()
+for i in A.edges:
+    print(i.terminus)
+
+
+
+# def onclick(event):
+#     c_x = event.xdata
+#     c_y = event.ydata
+#     print(c_x)
+#     print(c_y)
+#     print("\n")
+#     return c_x,c_y
+
+# im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)),"metrof_r.png"))
+# fig, ax = plt.subplots(figsize = plt.figaspect(im))
+# fig.canvas.mpl_connect('button_press_event', onclick)
+# fig.subplots_adjust(0,0,1,1)
+# ax.imshow(im)
+# # plt.axis('off')
+
+# # ax.scatter(589,696, s= 10)
+# plt.show()
+
+
+
+############################################
+# Dijkstra                                 #
+############################################
+
+def terminus(graph):
+    liste_terminus = []
+    for vertex in graph.keys():
+        if vertex.terminus == "True":
+            liste_terminus += [[vertex.name,vertex.line,vertex.branch]]
+    return liste_terminus
+
+# Interface renvoie nom des arrets de départ et d'arrivé"
+
+def utilisation_dijkstra(nom_depart, nom_arrive):
+    # Liste des arrets de meme station mais pas meme ligne (ex : Chatellet)
+    graph_metro = data_graph()
+    liste_depart = []
+    liste_arrive = []
+    for vertex in graph_metro.edges.keys():
+        if vertex.name == nom_depart:
+            liste_depart += [vertex]
+        if vertex.name == nom_arrive:
+            liste_arrive += [vertex]
+
+    temps = 0
+    for vertex in liste_depart:
+        tuple = dijkstra(graph_metro.edges, vertex) # tuple = (dist, pred)
+        for vertex_1 in nom_arrive:
+            if tuple[0][vertex_1] < temps:
+                temps = tuple[0][vertex_1]
+                pred = tuple[1]
+                vertex_depart = vertex
+                vertex_arrive = vertex_1
+
+    
+
+    return shortest_path(vertex,vertex_1,pred)
+    
+
+    # while i < len(shortest_path):
+    #     vertex = shortest_path[i]
+    #     j = i
+    #     while vertex.line == shortest_path[j].line and vertex.branch == shortest_path[j].branch:
+    #         j+=1
+
+    #     i = j
+    #     print("Prendre la ligne",vertex.line,"direction", terminus.name,"à",vertex.name,"jusqu'à", shortest_path[i].name)
 
 
