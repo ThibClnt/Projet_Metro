@@ -16,7 +16,7 @@ class Vertex:
     """
     _unnamed_count = 0  # Compte le nombre d'objets non nommés, afin de leur donner un nom par défaut
 
-    def __init__(self, name=None, line = None,  branch = None, terminus = None, sens = 0):
+    def __init__(self, name=None, line = None,  branch = None, terminus = None):
         self.name = Vertex._unnamed_count if name is None else name
         if name is None:
             Vertex._unnamed_count += 1
@@ -25,7 +25,6 @@ class Vertex:
         self.line = line
         self.branch = branch
         self.terminus = terminus
-        self.sens = sens
 
 class Graph:
     """
@@ -168,7 +167,6 @@ def data_graph():
             elif "E " in line1 and "num_sommet1" not in line1:
                 line_edge = line1.split()
                 Graph_metro.add_edge(Graph_metro.vertices[int(line_edge[1])],Graph_metro.vertices[int(line_edge[2])],int(line_edge[3]))
-    
         return Graph_metro
 
             
@@ -244,10 +242,8 @@ def dijkstra(graph, summit):
 
 def shortest_path(summit, target_vertex, pred):
     arrive = pred[target_vertex]
-
     path = [arrive, target_vertex]
     while arrive != summit:
-
         arrive = pred[arrive]
         path = [arrive] + path
     return path
@@ -282,24 +278,20 @@ def name_terminus(branch,ligne, liste_terminus):
             return liste[0]
 
 def verif_embranchement(station1, station2, graph):
-    liste1 = ["Église d'Auteuil","Michel Ange Auteuil","Porte d'Auteuil"]
-    liste2 = ["Michel Ange Molitor", "Mirabeau","Chardon Lagache"]
-    station = station2    
+    station = station2
+    station_pred = station1     
     station_pred = [station1]
-
+    i = 0
     
     while station.terminus != "True" :
-        vertex_pred = station_pred[-1]
-        for vertex in graph.edges[station]:
         
+        for vertex in graph.edges[station]:
             if vertex.line == station.line and vertex.branch == station.branch and vertex not in station_pred:
                 station_pred += [station]
                 station = vertex
                 
-                
-            elif vertex.line == station.line and vertex.branch != station.branch and vertex not in station_pred:
+            elif vertex.line == station.line and vertex.branch != station.branch and vertex in station_pred:
                 return True
-
     return station
 
 # Interface renvoie nom des arrets de départ et d'arrivé"
@@ -313,7 +305,9 @@ def utilisation_dijkstra(nom_depart, nom_arrive,graph):
             liste_depart += [vertex]
         if vertex.name == nom_arrive:
             liste_arrive += [vertex]
+
     temps = math.inf
+
     for vertex in liste_depart:
         tuple = dijkstra(graph.edges, vertex) # tuple = (dist, pred)
 
@@ -324,96 +318,47 @@ def utilisation_dijkstra(nom_depart, nom_arrive,graph):
                 vertex_depart = vertex
                 vertex_arrive = vertex_1
 
-
-
+    
 
     return temps,shortest_path(vertex_depart,vertex_arrive,pred)
     
-def afficher_temps(tuple_result, graph):
-    temps = tuple_result[0]
-    sec = temps%60
-    min = (temps -sec)/60
-    print("Le trajet durera",int(min),"m",sec,"s (",temps,"s)")
-    print("")
 
 
 def afficher_texte_parcours(tuple_result, graph):
+    temps = tuple_result[0]
     shortest_path = tuple_result[1]
+    sec = temps%60
+    min = (temps -sec)/60
 
+    print("Le trajet durera",int(min),"m",sec,"s (",temps,"s)")
+    print("")
     liste_term = liste_terminus(graph)
     i = 0
-
-    val = 0
-    a = i +1
     while i < len(shortest_path):
-        if i ==0 :
-            vertex = shortest_path[i]
-        else:
-            vertex = shortest_path[i-1]
+        vertex = shortest_path[i]
         val = 0
-        while vertex.line == shortest_path[i].line and i < len(shortest_path)-1 and (vertex.branch == shortest_path[i].branch or vertex.branch ==0) :
-            if shortest_path[i].line == shortest_path[i+1].line and shortest_path[i].branch != shortest_path[i+1].branch and shortest_path[i].branch != 0:
+        while vertex.line == shortest_path[i].line and i < len(shortest_path)-1:
+            if shortest_path[i].line == shortest_path[i+1].line and shortest_path[i].branch != shortest_path[i+1].branch:
                 val = i+1
-            
-            i+=1
-        
-        while i < len(shortest_path)-1 and vertex.line == shortest_path[i+1].line and shortest_path[i].branch == 0 and shortest_path[i+1].branch == 0 :
             i += 1
-            val = 0
-        if val == 0 and verif_embranchement(shortest_path[len(shortest_path)-2],shortest_path[len(shortest_path)-1], graph) != True and len(shortest_path) -i<2:
-
-            terminus = verif_embranchement(shortest_path[len(shortest_path)-2],shortest_path[len(shortest_path)-1], graph).name
+        if val == 0 and verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph) == True:
+            terminus = name_terminus(1,shortest_path[i-1].line,liste_term)
             print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
             print("")
-            i+= 1
-        elif val == 0 and verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph) == True and len(shortest_path) -i >=2:
-            
-            terminus = name_terminus(1,shortest_path[i-2].line,liste_term)
+        elif val == 0 and  verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph) != True:
+            terminus = verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph).name
             print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
             print("")
-            i +=1
-
-        elif val == 0 and verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph) == True and len(shortest_path) -i < 2:
-            
-            terminus = name_terminus(shortest_path[0].branch,shortest_path[1].line,liste_term)
-            print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
-            print("")
-            i +=1
-        elif val == 0 and verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph) != True and len(shortest_path) -i>= 2:
-            
-            if vertex.name == shortest_path[i].name:
-                sec = graph.edges[vertex][shortest_path[i]]%60
-                min = (graph.edges[vertex][shortest_path[i]] - sec) /60
-                print("Changer de ligne à", vertex.name, "(temps estimé :" ,int(min),"min", sec,"s)")
-                print("")
-
-            else:
-                terminus = verif_embranchement(shortest_path[i-2],shortest_path[i-1], graph).name
-                print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
-                print("")
-            i+= 1
-        
         elif val != 0:
             terminus = name_terminus(shortest_path[val].branch,shortest_path[val].line,liste_term)
-            print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[val].name)
+            print("Prendre la ligne",vertex.line,"direction", terminus,"de",vertex.name,"jusqu'à", shortest_path[i].name)
             print("")
-            i+=1
-
-            
-
-
-def main():
-    graph =data_graph()
-
-
-    name_depart = "Mairie de Montreuil"
-    name_arrive =  "Villejuif, Louis Aragon"
-
-    afficher_temps(utilisation_dijkstra(name_depart, name_arrive,graph),graph)
-    afficher_texte_parcours(utilisation_dijkstra(name_depart,name_arrive,graph),graph)
 
         
+        i+= 1
+    
 
 
-main()
+graph = data_graph()
 
+afficher_texte_parcours(utilisation_dijkstra("Passy","Varenne",graph),graph)
