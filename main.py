@@ -14,17 +14,17 @@ class Vertex:
     Représente le sommet d'un graphe. Peut avoir un parent, ou "représentant", nommé root.
     Rank représente l'étage dans l'arbre, pour l'algorithme de Kruskal.
     """
-    _unnamed_count = 0  # Compte le nombre d'objets non nommés, afin de leur donner un nom par défaut
 
     def __init__(self, name=None, line=None, branch=None, terminus=None):
-        self.name = Vertex._unnamed_count if name is None else name
-        if name is None:
-            Vertex._unnamed_count += 1
-        self.root = None
+        self.name = name
+        self.root = self
         self.rank = 0
         self.line = line
         self.branch = branch
         self.terminus = terminus
+
+    def __repr__(self):
+        return f" Vertex : {self.name} ; parent : {self.root.name} ; "
 
 
 class Graph:
@@ -65,7 +65,7 @@ class Graph:
         :param vertex : Vertex
         :return: Vertex (root)
         """
-        if vertex.root is None:
+        if vertex.root == vertex:
             return vertex
         return self.find(vertex.root)
 
@@ -78,13 +78,12 @@ class Graph:
         xroot = self.find(x)
         yroot = self.find(y)
 
-        if xroot == yroot:
-            if x.rank < y.rank:
-                x.root = y.root
-            else:
-                y.root = x.root
-                if x.rank == y.rank:
-                    x.rank += 1
+        if xroot.rank < yroot.rank:
+            xroot.root = yroot
+        else:
+            yroot.root = xroot
+            if x.rank == y.rank:
+                x.rank += 1
 
 
 class NonOrientedGraph(Graph):
@@ -145,22 +144,31 @@ def data_coord():
 ############################################
 # Algorithmes                              #
 ############################################
-# TODO : Kruskal
 def kruskal(graph: Graph):
     if graph.acpm_fait:
         return
 
     edges = []
+    result = []
     for pt_depart in graph.edges.keys():
         for pt_arrivee in graph.edges[pt_depart].keys():
             edges.append([pt_depart, pt_arrivee, graph.edges[pt_depart][pt_arrivee]])
 
     edges.sort(key=lambda e: e[2])
 
-    while edges:
+    while len(edges) != 0:
         orig, dest, _ = edges.pop(0)
         if graph.find(orig) != graph.find(dest):
             graph.union(orig, dest)
+            for v in graph.edges.keys():
+                if v.name == orig.name:
+                    graph.union(v, orig)
+                if v.name == dest.name:
+                    graph.union(v, dest)
+
+            result.append((orig, dest))
+
+    return result
 
 
 # TODO: Dijskra: Renommage variables; Adaptation types de données ; Encapsulation
@@ -230,22 +238,28 @@ class Gui:
 
     def __init__(self, path):
         # Initialisation de l'affichage
-        self._init_display(path)
+        self.impath = path
+        self._init_display()
 
         self.start = None
         self.end = None
         self.mode = Gui.PCC
 
+        self.graph = data_graph()
         self.pos = data_coord()
-        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
-        plt.show()
 
-    def _init_display(self, path):
-        im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), path))
+        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+
+    def _init_display(self):
+        im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), self.impath))
         self.fig, self.ax = plt.subplots(figsize=plt.figaspect(im))
         self.fig.subplots_adjust(0, 0, 1, 1)
-        self.ax.imshow(im)
         plt.axis('off')
+        self.ax.imshow(im)
+
+    def reset_display(self):
+        im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), self.impath))
+        self.ax.imshow(im)
 
     def on_click(self, event):
         if self.mode != Gui.PCC:
@@ -266,8 +280,6 @@ class Gui:
 
     def switch_mode(self):
         self.mode = 3 - self.mode
-        plt.clf()
-        self._init_display()
 
         if self.mode == Gui.ACPM:
             self.display_acpm()
@@ -275,9 +287,25 @@ class Gui:
             self.start, self.end = None, None
 
     def display_acpm(self):
-        pass
+        acpm = kruskal(self.graph)
+
+        for v, p in acpm:
+            vx, vy, px, py = 0, 0, 0, 0
+
+            for coord, vertex in self.pos.items():
+                if v.name == vertex:
+                    vx, vy = int(coord[0]), int(coord[1])
+                    break
+
+            for coord, vertex in self.pos.items():
+                if p.name == vertex:
+                    px, py = int(coord[0]), int(coord[1])
+                    break
+
+            plt.plot((vx, px), (vy, py), color='blue', linewidth=2)
 
 
 if __name__ == '__main__':
-    graph = data_graph()
-    kruskal(graph)
+    Gui("metrof_r.png").switch_mode()
+    plt.show()
+
