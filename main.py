@@ -170,6 +170,38 @@ def data_graph():
             elif "E " in line1 and "num_sommet1" not in line1:
                 line_edge = line1.split()
                 Graph_metro.add_edge(Graph_metro.vertices[int(line_edge[1])],Graph_metro.vertices[int(line_edge[2])],int(line_edge[3]))
+
+        
+        for v in Graph_metro.edges.keys():
+
+            if v.name == "Église d'Auteuil":
+                eglise = v
+            if v.name == "Javel":
+                javel = v
+            if v.name == "Michel Ange Molitor" and v.line == "10":
+                molitor = v
+            if v.name == "Porte d'Auteuil":
+                porte = v
+            if v.name == "Boulogne, Jean Jaurès":
+                boulogne = v
+            if v.name == "Michel Ange Auteuil" and v.line == "10":
+                auteuil = v
+            if v.name == "Chardon Lagâche":
+                chardon = v
+            if v.name == "Mirabeau":
+                mirabeau = v
+
+        del Graph_metro.edges[javel][mirabeau]
+        del Graph_metro.edges[mirabeau][chardon]
+        del Graph_metro.edges[chardon][molitor]
+        del Graph_metro.edges[eglise][javel]
+        del Graph_metro.edges[auteuil][eglise]
+        del Graph_metro.edges[porte][auteuil]
+        del Graph_metro.edges[boulogne][porte]
+        del Graph_metro.edges[porte][molitor]
+        del Graph_metro.edges[molitor][porte]
+
+  
     
         return Graph_metro
 
@@ -272,6 +304,13 @@ def shortest_path(summit, target_vertex, pred):
 # Dijkstra                                 #
 ############################################
 
+#TODO : fonction d'un recherche d'un sommet en fonction du nom pour épurer
+
+def recherche_vertex(name, graph):
+    for v in graph.edges.keys():
+                    if v.name == name:
+                        return v
+
 def liste_terminus(graph):
     liste_terminus = []
     for vertex in graph.edges.keys():
@@ -288,13 +327,26 @@ def find_terminus(station1, station2, graph):
     liste_term = liste_terminus(graph)
     station = station2    
     station_pred = [station1]
-    i = 0
+
+
     if station1.branch != station2.branch:                                              # Si branches différentes entre S1 et S2 on récupère directement le terminus
         return terminus(station2.branch,station2.line, liste_term)
 
+    if station2.name == "Javel" and station1.name == "Mirabeau":
+        return recherche_vertex("Gare d'Austerlitz", graph)
+    
+
+
     while station.terminus != "True" :
         for vertex in graph.edges[station]:
-            i+=1
+
+
+            if station.name == "Mirabeau" and (vertex.name == "Église d'Auteuil" or vertex.name == "Javel"):
+                return recherche_vertex("Gare d'Austerlitz", graph)
+                    
+            if station.name == "Porte d'Auteuil" and (vertex.name == "Boulogne, Jean Jaurès" or vertex.name == "Michel Ange Molitor"):
+                return recherche_vertex("Boulogne, Pont de Saint-Cloud, Rond Point Rhin et Danube", graph)
+
             if vertex not in station_pred and vertex.line == station.line:
                 
                 if vertex.branch == station.branch:                                     # On parcours la ligne jusqu'à trouver un terminus
@@ -305,11 +357,6 @@ def find_terminus(station1, station2, graph):
                 else:
                     return terminus(vertex.branch,vertex.line, liste_term)               # Si on tombe sur un embranchements on peut renvoyer n'importe lequel des terminus
 
-            #Cas critique de la ligne 10
-            if i == 50:
-                for v in graph.edges.keys():
-                    if v.name == "Boulogne, Pont de Saint-Cloud, Rond Point Rhin et Danube":
-                        return v
 
     return station
 
@@ -349,6 +396,7 @@ def afficher_temps(tuple_result, graph):
 
 
 def afficher_texte_parcours(tuple_result, graph):
+
     shortest_path = tuple_result[1]
     i = 0
     var= 0
@@ -357,21 +405,23 @@ def afficher_texte_parcours(tuple_result, graph):
         cond = True
         embranch = False
         while cond and i< len(shortest_path)-1:
-
             if shortest_path[i].line == shortest_path[i+1].line:
-
-                if shortest_path[i].branch == shortest_path[i+1].branch :   #Cas rien de particulier
+                
+                if (shortest_path[i-1].name == "Mirabeau" and shortest_path[i+1].name == "Église d'Auteuil") or (shortest_path[i-1].name == "Porte d'Auteuil" and shortest_path[i+1].name == "Michel Ange Molitor"):
+                    embranch =  True
+                    cond =  False
+                elif shortest_path[i].branch == shortest_path[i+1].branch :   #Cas rien de particulier
                     i += 1
                 elif (shortest_path[i-1].branch == 1 and shortest_path[i+1].branch ==2) or (shortest_path[i+1].branch == 1 and shortest_path[i-1].branch ==2): #Cas embranchement relou
                     embranch = True
                     cond = False
                 elif shortest_path[i+1].branch == 0 or shortest_path[i].branch == 0: #Si on arrive sur d'une 0 ou va vers une 0
                     i += 1
+                
                 else:
                     cond = False
             else:
                 cond = False
- 
         terminus = find_terminus(shortest_path[i-1], shortest_path[i], graph).name
         print("Prendre la ligne", shortest_path[i].line,"direction",terminus,"de", shortest_path[var].name,"jusqu'a",shortest_path[i].name)
         #Permettre de ne pas sauter un arret en cas d'embranchement
@@ -389,8 +439,8 @@ def main():
     graph =data_graph()
 
 
-    name_depart = "Couronnes"
-    name_arrive =  "Vaneau"
+    name_depart = "Dupleix"
+    name_arrive =  "Porte des Lilas"
 
     afficher_temps(utilisation_dijkstra(name_depart, name_arrive,graph),graph)
     afficher_texte_parcours(utilisation_dijkstra(name_depart,name_arrive,graph),graph)
