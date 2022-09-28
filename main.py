@@ -27,7 +27,7 @@ class Graph:
     """
 
     def __init__(self):
-        self.edges = {}         # Arêtes du graphe sous la forme : {pt_de_depart: {pt_darrive: poids}}
+        self.edges = {}  # Arêtes du graphe sous la forme : {pt_de_depart: {pt_darrive: poids}}
         self.vertices = list()  # Liste des sommets du graphe
         self.acpm_fait = False  # Vrai lorsque l'acpm a été calculé
 
@@ -60,9 +60,9 @@ class Arret(Vertex):
 
     def __init__(self, name=None, line=None, branch=None, terminus=None):
         super().__init__(name)
-        self.line = line            # Numéro de ligne
-        self.branch = branch        # Identifiant de l'embranchement
-        self.terminus = terminus    # Vrai si c'est un terminus - Faux sinon
+        self.line = line  # Numéro de ligne
+        self.branch = branch  # Identifiant de l'embranchement
+        self.terminus = terminus  # Vrai si c'est un terminus - Faux sinon
 
 
 ############################################
@@ -184,8 +184,8 @@ def kruskal(graph: Graph):
     if graph.acpm_fait:
         return
 
-    edges = []          # Liste des arêtes à traiter, triées par poids croissant
-    result = []         # Liste des arêtes de l'acpm
+    edges = []   # Liste des arêtes à traiter, triées par poids croissant
+    result = []  # Liste des arêtes de l'acpm
     for pt_depart in graph.vertices:
         for pt_arrivee in graph.edges[pt_depart].keys():
             edges.append([pt_depart, pt_arrivee, graph.edges[pt_depart][pt_arrivee]])
@@ -264,7 +264,6 @@ def shortest_path(summit, target_vertex, pred):
 
     path = [arrive, target_vertex]
     while arrive != summit:
-
         arrive = pred[arrive]
         path = [arrive] + path
     return path
@@ -276,27 +275,34 @@ def recherche_vertex(name, graph):
             return v
 
 
-def liste_terminus(graph):
+def recuperation_terminus(graph):
+    """
+    Retourne une liste des terminus. Terminus de la forme [arrêt, ligne, embranchement]
+    """
     liste_terminus = []
     for vertex in graph.edges.keys():
-        if vertex.terminus == "True":
+        if vertex.fonction_terminus == "True":
             liste_terminus += [[vertex, vertex.line, vertex.branch]]
     return liste_terminus
 
 
-def terminus(branch, ligne, liste_terminus):
+# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ? Renommer fonction :
+#  nom pas assez explicite. Renommage temporaire en fonction_terminus pour éviter les conflits avec toutes variables
+#  nommées 'terminus '
+def fonction_terminus(branch, ligne, liste_terminus):
     for liste in liste_terminus:
         if liste[1] == ligne and liste[2] == branch:
             return liste[0]
 
 
-def find_terminus(station1, station2, graph):
-    liste_term = liste_terminus(graph)
+# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ?
+def trouver_terminus(station1, station2, graph):
+    liste_terminus = recuperation_terminus(graph)
     station = station2
     station_pred = [station1]
 
     if station1.branch != station2.branch:  # Si branches différentes entre S1 et S2 on récupère directement le terminus
-        return terminus(station2.branch, station2.line, liste_term)
+        return fonction_terminus(station2.branch, station2.line, liste_terminus)
 
     if station2.name == "Javel" and station1.name == "Mirabeau":
         return recherche_vertex("Gare d'Austerlitz", graph)
@@ -317,81 +323,95 @@ def find_terminus(station1, station2, graph):
                     station_pred += [station]
                     station = vertex
 
-
                 else:
-                    return terminus(vertex.branch, vertex.line,
-                                    liste_term)  # Si on tombe sur un embranchements on peut renvoyer n'importe lequel des terminus
+                    return fonction_terminus(vertex.branch, vertex.line, liste_terminus)
+                    # Si on ne tombe pas sur un embranchement on peut renvoyer n'importe lequel des terminus
 
     return station
 
 
-# Interface renvoie nom des arrets de départ et d'arrivé"
-
+# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ? Commenter le rôle de
+#  chaque bloc de code et de chaque variable : leur utilité est loin d'être triviale !
 def utilisation_dijkstra(nom_depart, nom_arrive, graph):
-    # Liste des arrets de meme station mais pas meme ligne (ex : Chatellet)
+    # Listes des arrets de meme nom (mais pas de meme ligne) (ex : Chatellet)
     liste_depart = []
     liste_arrive = []
+    vertex_depart = vertex_arrive = pred = None
+
     for vertex in graph.edges.keys():
         if vertex.name == nom_depart:
             liste_depart += [vertex]
         if vertex.name == nom_arrive:
             liste_arrive += [vertex]
+
     temps = math.inf
     for vertex in liste_depart:
-        tuple = dijkstra(graph.edges, vertex)  # tuple = (dist, pred)
+        resultat_dijkstra = dijkstra(graph.edges, vertex)  # tuple : (distances, prédecesseurs)
 
         for vertex_1 in liste_arrive:
-            if tuple[0][vertex_1] < temps:
-                temps = tuple[0][vertex_1]
-                pred = tuple[1]
+            if resultat_dijkstra[0][vertex_1] < temps:
+                temps = resultat_dijkstra[0][vertex_1]
+                pred = resultat_dijkstra[1]
                 vertex_depart = vertex
                 vertex_arrive = vertex_1
 
-    return temps, shortest_path(vertex_depart, vertex_arrive, pred)
+    pcc = shortest_path(vertex_depart, vertex_arrive, pred)
+    afficher_temps(temps)
+    afficher_texte_parcours(chemin, reseau)
+
+    return temps, pcc
 
 
-def afficher_temps(tuple_result, graph):
-    temps = tuple_result[0]
-    sec = temps % 60
-    min = (temps - sec) / 60
-    print("Le trajet durera", int(min), "m", sec, "s (", temps, "s)")
-    print("")
+def afficher_temps(temps):
+    """
+    Affiche le temps de trajet en console
+    """
+    seccondes = temps % 60
+    minutes = (temps - seccondes) / 60
+    print("Le trajet durera", int(minutes), "m", seccondes, "s (", temps, "s)\n")
 
 
-def afficher_texte_parcours(tuple_result, graph):
-    shortest_path = tuple_result[1]
+# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ? Commenter le rôle de
+#  chaque bloc de code et de chaque variable : leur utilité est loin d'être triviale !
+def afficher_texte_parcours(pcc, graph):
+    """
+    Affiche les étapes du trajet en console. pcc est le plus court chemin (liste de Arret) et graph est le graphe
+    représentant le réseau de transports
+    :param pcc: list
+    :param graph: Graph
+    """
     i = 0
     var = 0
-    while i < len(shortest_path):
+    while i < len(pcc):
 
         cond = True
         embranch = False
-        while cond and i < len(shortest_path) - 1:
-            if shortest_path[i].line == shortest_path[i + 1].line:
+        while cond and i < len(pcc) - 1:
+            if pcc[i].line == pcc[i + 1].line:
 
-                if (shortest_path[i - 1].name == "Mirabeau" and shortest_path[i + 1].name == "Église d'Auteuil") or (
-                        shortest_path[i - 1].name == "Porte d'Auteuil" and shortest_path[
-                    i + 1].name == "Michel Ange Molitor"):
+                if ((pcc[i - 1].name == "Mirabeau" and pcc[i + 1].name == "Église d'Auteuil") or
+                        (pcc[i - 1].name == "Porte d'Auteuil" and pcc[i + 1].name == "Michel Ange Molitor")):
                     embranch = True
                     cond = False
-                elif shortest_path[i].branch == shortest_path[i + 1].branch:  # Cas rien de particulier
+
+                elif pcc[i].branch == pcc[i + 1].branch:  # Cas rien de particulier
                     i += 1
-                elif (shortest_path[i - 1].branch == 1 and shortest_path[i + 1].branch == 2) or (
-                        shortest_path[i + 1].branch == 1 and shortest_path[
-                    i - 1].branch == 2):  # Cas embranchement relou
+
+                elif ((pcc[i - 1].branch == 1 and pcc[i + 1].branch == 2) or
+                      (pcc[i + 1].branch == 1 and pcc[i - 1].branch == 2)):  # Cas embranchement relou
                     embranch = True
                     cond = False
-                elif shortest_path[i + 1].branch == 0 or shortest_path[
-                    i].branch == 0:  # Si on arrive sur d'une 0 ou va vers une 0
+
+                elif pcc[i + 1].branch == 0 or pcc[i].branch == 0:  # Si on arrive sur d'une 0 ou va vers une 0
                     i += 1
 
                 else:
                     cond = False
             else:
                 cond = False
-        terminus = find_terminus(shortest_path[i - 1], shortest_path[i], graph).name
-        print("Prendre la ligne", shortest_path[i].line, "direction", terminus, "de", shortest_path[var].name,
-              "jusqu'a", shortest_path[i].name)
+        terminus = trouver_terminus(pcc[i - 1], pcc[i], graph).name
+        print("Prendre la ligne", pcc[i].line, "direction", terminus, "de", pcc[var].name,
+              "jusqu'a", pcc[i].name)
         # Permettre de ne pas sauter un arret en cas d'embranchement
         if embranch:
             var = i
@@ -404,11 +424,12 @@ def afficher_texte_parcours(tuple_result, graph):
 ############################################
 # Interface graphique                      #
 ############################################
-
-
 class App:
-    PCC = 1
-    ACPM = 2
+    """
+    Coeur de l'application
+    """
+    PCC = 1         # Mode de recherche du plus court chemin
+    ACPM = 2        # Mode d'affichage de l'arbre couvrant de poids minimum
 
     def __init__(self, path):
         # Initialisation de l'affichage
@@ -421,11 +442,14 @@ class App:
 
         self.graph = data_graph()
         self.pos = data_coord()
-        self.acpm = []      # Variable destinée
+        self.acpm = []  # Variable destinée
 
         self.fig.canvas.mpl_connect('button_press_event', self.on_click)
 
     def _init_display(self):
+        """
+        Initialisation de l'affichage, avec l'image du réseau de transport
+        """
         im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), self.impath))
         self.fig, self.ax = plt.subplots(figsize=plt.figaspect(im))
         self.fig.subplots_adjust(0, 0, 1, 1)
@@ -433,6 +457,9 @@ class App:
         self.ax.imshow(im)
 
     def reset_display(self):
+        """
+        Réinitialisation de l'affichage, lors d'un changement de mode
+        """
         im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), self.impath))
         self.ax.imshow(im)
 
@@ -450,10 +477,13 @@ class App:
                     self.end = vertex
 
                 if self.start is not None and self.end is not None:
-                    utilisation_dijkstra(self.start, self.end, self)
+                    utilisation_dijkstra(self.start, self.end, self.graph)
                 break
 
     def switch_mode(self):
+        """
+        Changement de mode
+        """
         self.mode = 3 - self.mode
 
         if self.mode == App.ACPM:
@@ -462,6 +492,9 @@ class App:
             self.start, self.end = None, None
 
     def display_acpm(self):
+        """
+        Affichage de l'arbre couvrant de poids minimum
+        """
         self.acpm = kruskal(self.graph)
 
         for v, p in self.acpm:
@@ -481,14 +514,12 @@ class App:
 
 
 if __name__ == '__main__':
-
-    G = data_graph()
+    reseau = data_graph()
 
     name_depart = "Dupleix"
     name_arrive = "Porte des Lilas"
-
-    afficher_temps(utilisation_dijkstra(name_depart, name_arrive, G), G)
-    afficher_texte_parcours(utilisation_dijkstra(name_depart, name_arrive, G), G)
-    """    App("metrof_r.png").switch_mode()
-        plt.show()
+    temps_trajet, chemin = utilisation_dijkstra(name_depart, name_arrive, reseau)
+    """  
+    App("metrof_r.png").switch_mode()
+    plt.show()
     """
