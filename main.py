@@ -270,8 +270,12 @@ def shortest_path(summit, target_vertex, pred):
 
 
 def recherche_vertex(name, graph):
+    """
+    Rend le sommet qui a pour nom "name"
+    Utile dans notre programme pour les terminus de la ligne 10 
+    """
     for v in graph.edges.keys():
-        if v.name == name:
+        if v.name == name and v.line == "10":
             return v
 
 
@@ -281,7 +285,7 @@ def recuperation_terminus(graph):
     """
     liste_terminus = []
     for vertex in graph.edges.keys():
-        if vertex.fonction_terminus == "True":
+        if vertex.terminus == "True":
             liste_terminus += [[vertex, vertex.line, vertex.branch]]
     return liste_terminus
 
@@ -290,6 +294,11 @@ def recuperation_terminus(graph):
 #  nom pas assez explicite. Renommage temporaire en fonction_terminus pour éviter les conflits avec toutes variables
 #  nommées 'terminus '
 def fonction_terminus(branch, ligne, liste_terminus):
+    """
+    Rend le terminus en fonction de la ligne et de la branche
+    La fonction est utile dans la fonction trouver_terminus quand on observe des lignes avec embranchement
+    Elle evite de parcourir toute la ligne
+    """
     for liste in liste_terminus:
         if liste[1] == ligne and liste[2] == branch:
             return liste[0]
@@ -297,6 +306,9 @@ def fonction_terminus(branch, ligne, liste_terminus):
 
 # TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ?
 def trouver_terminus(station1, station2, graph):
+    """
+    Permet d'obtenir le terminus de la ligne dans le sens station1 vers station2
+    """
     liste_terminus = recuperation_terminus(graph)
     station = station2
     station_pred = [station1]
@@ -325,7 +337,7 @@ def trouver_terminus(station1, station2, graph):
 
                 else:
                     return fonction_terminus(vertex.branch, vertex.line, liste_terminus)
-                    # Si on ne tombe pas sur un embranchement on peut renvoyer n'importe lequel des terminus
+                    # Si on ne tombe pas sur un embranchement on peut renvoyer n'importe lequel des terminus de la ligne
 
     return station
 
@@ -356,8 +368,7 @@ def utilisation_dijkstra(nom_depart, nom_arrive, graph):
                 vertex_arrive = vertex_1
 
     pcc = shortest_path(vertex_depart, vertex_arrive, pred)
-    afficher_temps(temps)
-    afficher_texte_parcours(chemin, reseau)
+
 
     return temps, pcc
 
@@ -390,11 +401,11 @@ def afficher_texte_parcours(pcc, graph):
             if pcc[i].line == pcc[i + 1].line:
 
                 if ((pcc[i - 1].name == "Mirabeau" and pcc[i + 1].name == "Église d'Auteuil") or
-                        (pcc[i - 1].name == "Porte d'Auteuil" and pcc[i + 1].name == "Michel Ange Molitor")):
+                        (pcc[i - 1].name == "Porte d'Auteuil" and pcc[i + 1].name == "Michel Ange Molitor") and i>0):
                     embranch = True
                     cond = False
 
-                elif pcc[i].branch == pcc[i + 1].branch:  # Cas rien de particulier
+                elif pcc[i].branch == pcc[i + 1].branch:  # Cas classique
                     i += 1
 
                 elif ((pcc[i - 1].branch == 1 and pcc[i + 1].branch == 2) or
@@ -402,7 +413,7 @@ def afficher_texte_parcours(pcc, graph):
                     embranch = True
                     cond = False
 
-                elif pcc[i + 1].branch == 0 or pcc[i].branch == 0:  # Si on arrive sur d'une 0 ou va vers une 0
+                elif pcc[i + 1].branch == 0 or pcc[i].branch == 0:  # Si on arrive d'un embranchement ou qu'on quitte un embranchement
                     i += 1
 
                 else:
@@ -523,3 +534,4 @@ if __name__ == '__main__':
     App("metrof_r.png").switch_mode()
     plt.show()
     """
+
