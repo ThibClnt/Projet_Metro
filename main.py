@@ -524,14 +524,19 @@ class App:
             plt.plot((vx, px), (vy, py), color='#0000f0', linewidth=2)
 
 
-if __name__ == '__main__':
-    reseau = data_graph()
+# if __name__ == '__main__':
+#     reseau = data_graph()
 
-    name_depart = "Dupleix"
-    name_arrive = "Porte des Lilas"
-    temps_trajet, chemin = utilisation_dijkstra(name_depart, name_arrive, reseau)
-    """  
-    App("metrof_r.png").switch_mode()
-    plt.show()
-    """
+#     name_depart = "Dupleix"
+#     name_arrive = "Porte des Lilas"
+#     temps_trajet, chemin = utilisation_dijkstra(name_depart, name_arrive, reseau)
+#     """  
+#     App("metrof_r.png").switch_mode()
+#     plt.show()
+#     """
 
+graph = data_graph()
+nom_depart = "Mairie de Clichy"
+nom_arrive= "La Fourche"
+tupl = utilisation_dijkstra(nom_depart, nom_arrive, graph)
+afficher_texte_parcours(tupl[1], graph)
