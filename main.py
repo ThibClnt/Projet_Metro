@@ -1,6 +1,5 @@
 import matplotlib.backend_bases
 import matplotlib.pyplot as plt
-from matplotlib.widgets import RadioButtons
 import math
 import os
 
