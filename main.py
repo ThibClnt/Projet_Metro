@@ -18,7 +18,7 @@ class Vertex:
         self.rank = 0
 
     def __repr__(self):
-        return f" Vertex : {self.name} ; parent : {self.root.name} ; "
+        return f" Vertex : {self.name} ; Parent : {self.root.name} ; "
 
 
 class Graph:
@@ -567,7 +567,7 @@ class App:
                 x0, y0 = x1, y1
 
             x1, y1 = self.recherche_pos_point(pcc[i + 1].name)
-            plt.plot((x0, x1), (y0, y1), color='#0000f0', linewidth=2)
+            plt.plot((x0, x1), (y0, y1), color='#ff0000', linewidth=4)
         plt.draw()
 
 
