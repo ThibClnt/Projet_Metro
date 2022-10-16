@@ -1,5 +1,6 @@
 import matplotlib.backend_bases
 import matplotlib.pyplot as plt
+from matplotlib.widgets import RadioButtons
 import math
 import os
 
@@ -90,7 +91,7 @@ def data_graph():
                                      int(line_edge[3]))
 
     # Orientation de quelques (rares) arêtes
-    eglise = javel = molitor = porte = boulogne = auteuil = chardon = mirabeau = None
+    eglise = javel = molitor = porte = boulogne = auteuil = chardon = mirabeau = danube = botzaris = place_des_fetes = pre_st_gervais = None
     for v in graph_metro.edges.keys():
 
         if v.name == "Église d'Auteuil":
@@ -109,6 +110,14 @@ def data_graph():
             chardon = v
         if v.name == "Mirabeau":
             mirabeau = v
+        if v.name == "Danube":
+            danube = v
+        if v.name == "Botzaris":
+            botzaris = v
+        if v.name == "Place des Fêtes":
+            place_des_fetes = v
+        if v.name == "Pré-Saint-Gervais":
+            pre_st_gervais = v
 
     del graph_metro.edges[javel][mirabeau]
     del graph_metro.edges[mirabeau][chardon]
@@ -119,6 +128,10 @@ def data_graph():
     del graph_metro.edges[boulogne][porte]
     del graph_metro.edges[porte][molitor]
     del graph_metro.edges[molitor][porte]
+    del graph_metro.edges[botzaris][danube]
+    del graph_metro.edges[danube][pre_st_gervais]
+    del graph_metro.edges[pre_st_gervais][place_des_fetes]
+    del graph_metro.edges[place_des_fetes][botzaris]
 
     return graph_metro
 
@@ -183,6 +196,7 @@ def kruskal(graph: Graph):
     # Si l'acpm a déjà été fait pour le graphe, pas besoin de recommencer
     if graph.acpm_fait:
         return
+    graph.acpm_fait = True
 
     edges = []   # Liste des arêtes à traiter, triées par poids croissant
     result = []  # Liste des arêtes de l'acpm
@@ -270,8 +284,12 @@ def shortest_path(summit, target_vertex, pred):
 
 
 def recherche_vertex(name, graph):
+    """
+    Rend le sommet qui a pour nom "name"
+    Utile dans notre programme pour les terminus de la ligne 10
+    """
     for v in graph.edges.keys():
-        if v.name == name:
+        if v.name == name and v.line == "10":
             return v
 
 
@@ -281,22 +299,26 @@ def recuperation_terminus(graph):
     """
     liste_terminus = []
     for vertex in graph.edges.keys():
-        if vertex.fonction_terminus == "True":
+        if vertex.terminus == "True":
             liste_terminus += [[vertex, vertex.line, vertex.branch]]
     return liste_terminus
 
 
-# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ? Renommer fonction :
-#  nom pas assez explicite. Renommage temporaire en fonction_terminus pour éviter les conflits avec toutes variables
-#  nommées 'terminus '
 def fonction_terminus(branch, ligne, liste_terminus):
+    """
+    Rend le terminus en fonction de la ligne et de la branche
+    La fonction est utile dans la fonction trouver_terminus quand on observe des lignes avec embranchement
+    Elle evite de parcourir toute la ligne
+    """
     for liste in liste_terminus:
         if liste[1] == ligne and liste[2] == branch:
             return liste[0]
 
 
-# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ?
 def trouver_terminus(station1, station2, graph):
+    """
+    Permet d'obtenir le terminus de la ligne dans le sens station1 vers station2
+    """
     liste_terminus = recuperation_terminus(graph)
     station = station2
     station_pred = [station1]
@@ -325,13 +347,11 @@ def trouver_terminus(station1, station2, graph):
 
                 else:
                     return fonction_terminus(vertex.branch, vertex.line, liste_terminus)
-                    # Si on ne tombe pas sur un embranchement on peut renvoyer n'importe lequel des terminus
+                    # Si on ne tombe pas sur un embranchement on peut renvoyer n'importe lequel des terminus de la ligne
 
     return station
 
 
-# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ? Commenter le rôle de
-#  chaque bloc de code et de chaque variable : leur utilité est loin d'être triviale !
 def utilisation_dijkstra(nom_depart, nom_arrive, graph):
     # Listes des arrets de meme nom (mais pas de meme ligne) (ex : Chatellet)
     liste_depart = []
@@ -356,9 +376,6 @@ def utilisation_dijkstra(nom_depart, nom_arrive, graph):
                 vertex_arrive = vertex_1
 
     pcc = shortest_path(vertex_depart, vertex_arrive, pred)
-    afficher_temps(temps)
-    afficher_texte_parcours(chemin, reseau)
-
     return temps, pcc
 
 
@@ -371,8 +388,6 @@ def afficher_temps(temps):
     print("Le trajet durera", int(minutes), "m", seccondes, "s (", temps, "s)\n")
 
 
-# TODO : Commenter : Quelles sont les variables, leur type attendu, que retourne la fonction ? Commenter le rôle de
-#  chaque bloc de code et de chaque variable : leur utilité est loin d'être triviale !
 def afficher_texte_parcours(pcc, graph):
     """
     Affiche les étapes du trajet en console. pcc est le plus court chemin (liste de Arret) et graph est le graphe
@@ -380,6 +395,7 @@ def afficher_texte_parcours(pcc, graph):
     :param pcc: list
     :param graph: Graph
     """
+    print("=== DEBUT DU TRAJET ===")
     i = 0
     var = 0
     while i < len(pcc):
@@ -390,11 +406,16 @@ def afficher_texte_parcours(pcc, graph):
             if pcc[i].line == pcc[i + 1].line:
 
                 if ((pcc[i - 1].name == "Mirabeau" and pcc[i + 1].name == "Église d'Auteuil") or
-                        (pcc[i - 1].name == "Porte d'Auteuil" and pcc[i + 1].name == "Michel Ange Molitor")):
+                        (pcc[i - 1].name == "Porte d'Auteuil" and pcc[i + 1].name == "Michel Ange Molitor") and i > 0):
                     embranch = True
                     cond = False
 
-                elif pcc[i].branch == pcc[i + 1].branch:  # Cas rien de particulier
+                elif ((pcc[i - 1].name == "Place des Fêtes" and pcc[i + 1].name == "Danube") or
+                      (pcc[i - 1].name == "Danube" and pcc[i + 1].name == "Place des Fêtes") and i > 0):
+                    embranch = True
+                    cond = False
+
+                elif pcc[i].branch == pcc[i + 1].branch:  # Cas classique
                     i += 1
 
                 elif ((pcc[i - 1].branch == 1 and pcc[i + 1].branch == 2) or
@@ -402,7 +423,7 @@ def afficher_texte_parcours(pcc, graph):
                     embranch = True
                     cond = False
 
-                elif pcc[i + 1].branch == 0 or pcc[i].branch == 0:  # Si on arrive sur d'une 0 ou va vers une 0
+                elif pcc[i + 1].branch == 0 or pcc[i].branch == 0:  # Si on arrive d'un embranchement ou qu'on quitte un embranchement
                     i += 1
 
                 else:
@@ -419,6 +440,7 @@ def afficher_texte_parcours(pcc, graph):
             var = i + 1
 
         i += 1
+    print("=== FIN DU TRAJET ===\n")
 
 
 ############################################
@@ -435,6 +457,7 @@ class App:
         # Initialisation de l'affichage
         self.impath = path
         self._init_display()
+        plt.axes(self.ax)
 
         self.start = None
         self.end = None
@@ -444,7 +467,8 @@ class App:
         self.pos = data_coord()
         self.acpm = []  # Variable destinée
 
-        self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+        self.click_callback = self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+        self.keyboard_callback = self.fig.canvas.mpl_connect('key_press_event', self.on_press)
 
     def _init_display(self):
         """
@@ -460,8 +484,9 @@ class App:
         """
         Réinitialisation de l'affichage, lors d'un changement de mode
         """
-        im = plt.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), self.impath))
-        self.ax.imshow(im)
+        while self.ax.lines:
+            self.ax.lines.pop()
+        plt.draw()
 
     def on_click(self, event):
         if self.mode != App.PCC:
@@ -477,49 +502,76 @@ class App:
                     self.end = vertex
 
                 if self.start is not None and self.end is not None:
-                    utilisation_dijkstra(self.start, self.end, self.graph)
+                    self.reset_display()
+                    temps, pcc = utilisation_dijkstra(self.start, self.end, self.graph)
+                    afficher_texte_parcours(pcc, self.graph)
+                    self.afficher_trajet(pcc)
                 break
+
+    def on_press(self, event):
+        if event.key == ' ':
+            self.switch_mode()
+
+    def radio_clicked(self, label):
+        if label == "Plus court chemin" and self.mode == App.ACPM:
+            self.switch_mode()
+        elif label == "Arbre couvrant de poids minimum" and self.mode == App.PCC:
+            self.switch_mode()
 
     def switch_mode(self):
         """
         Changement de mode
         """
+        print(f"Changement de {self.mode} à {3 - self.mode}")
         self.mode = 3 - self.mode
+        self.reset_display()
 
         if self.mode == App.ACPM:
             self.display_acpm()
         elif self.mode == App.PCC:
             self.start, self.end = None, None
 
+    def recherche_pos_point(self, name):
+        """
+        Retourne la position (x, y) du point dont le nom est name
+        """
+        x, y = 0, 0
+        for coord, vertex in self.pos.items():
+            if name == vertex:
+                x, y = int(coord[0]), int(coord[1])
+                break
+        return x, y
+
     def display_acpm(self):
         """
         Affichage de l'arbre couvrant de poids minimum
         """
-        self.acpm = kruskal(self.graph)
+        if not self.graph.acpm_fait:
+            self.acpm = kruskal(self.graph)
 
         for v, p in self.acpm:
-            vx, vy, px, py = 0, 0, 0, 0
-
-            for coord, vertex in self.pos.items():
-                if v.name == vertex:
-                    vx, vy = int(coord[0]), int(coord[1])
-                    break
-
-            for coord, vertex in self.pos.items():
-                if p.name == vertex:
-                    px, py = int(coord[0]), int(coord[1])
-                    break
-
+            vx, vy = self.recherche_pos_point(v.name)
+            px, py = self.recherche_pos_point(p.name)
             plt.plot((vx, px), (vy, py), color='#0000f0', linewidth=2)
+
+        plt.draw()
+
+    def afficher_trajet(self, pcc):
+        """
+        Dessin du trajet
+        """
+        x0, y0, x1, y1 = 0, 0, 0, 0
+        x0, y0 = self.recherche_pos_point(pcc[0].name)
+
+        for i in range(len(pcc) - 1):
+            if i != 0:
+                x0, y0 = x1, y1
+
+            x1, y1 = self.recherche_pos_point(pcc[i + 1].name)
+            plt.plot((x0, x1), (y0, y1), color='#0000f0', linewidth=2)
+        plt.draw()
 
 
 if __name__ == '__main__':
-    reseau = data_graph()
-
-    name_depart = "Dupleix"
-    name_arrive = "Porte des Lilas"
-    temps_trajet, chemin = utilisation_dijkstra(name_depart, name_arrive, reseau)
-    """  
-    App("metrof_r.png").switch_mode()
+    app = App("metrof_r.png")
     plt.show()
-    """
