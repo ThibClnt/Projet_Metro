@@ -189,7 +189,7 @@ def kruskal(graph: Graph):
     Algorithme de Kruskal : retourne l'acpm du graphe passé en paramètre (en tant qu'une liste d'arêtes). Une arête est
     représentée comme un tuple (sommet1, sommet2)
     :param graph: Graph
-    :rtype: list(tuple())
+    :rtype: list(tuple()) + int
     """
 
     # Si l'acpm a déjà été fait pour le graphe, pas besoin de recommencer
@@ -199,6 +199,8 @@ def kruskal(graph: Graph):
 
     edges = []   # Liste des arêtes à traiter, triées par poids croissant
     result = []  # Liste des arêtes de l'acpm
+    poids = 0    # Poids de l'acpm
+
     for pt_depart in graph.vertices:
         for pt_arrivee in graph.edges[pt_depart].keys():
             edges.append([pt_depart, pt_arrivee, graph.edges[pt_depart][pt_arrivee]])
@@ -208,7 +210,7 @@ def kruskal(graph: Graph):
     while len(edges) != 0:
         # Chaque arête est traitée à tour de rôle (poids min en premier)
         # Une arête traitée est retirée de la liste 'edges'
-        orig, dest, _ = edges.pop(0)
+        orig, dest, w = edges.pop(0)
 
         # Si les parents des arbres auquel appartiennent les deux sommets de l'arête sont les mêmes, les arbres sont les
         # mêmes, ce qui signifie que l'ajout d'une telle arête formerait un cycle
@@ -223,8 +225,9 @@ def kruskal(graph: Graph):
                     union(v, dest)
 
             result.append((orig, dest))
+            poids += w
 
-    return result
+    return result, poids
 
 
 ############################################
@@ -485,7 +488,8 @@ class App:
 
         self.graph = data_graph()
         self.pos = data_coord()
-        self.acpm = []  # Variable destinée
+        self.acpm = []  # Variable destinée à recevoir l'acpm
+        self.acpm_weight = 0
 
         # Initialisation de l'affichage
         self.impath = path
@@ -503,7 +507,7 @@ class App:
         self.fig, self.ax = plt.subplots(figsize=plt.figaspect(im))
         self.fig.subplots_adjust(0, 0, 1, 1)
         plt.axis('off')
-        self.ax.imshow(im)
+        self.ax.imshow(im, alpha=0.5)
 
         # Points sur les arrêts
         x, y = [], []
@@ -581,14 +585,19 @@ class App:
         Affichage de l'arbre couvrant de poids minimum
         """
         if not self.graph.acpm_fait:
-            self.acpm = kruskal(self.graph)
+            self.acpm, self.acpm_weight = kruskal(self.graph)
 
         for v, p in self.acpm:
             vx, vy = self.recherche_pos_point(v.name)
             px, py = self.recherche_pos_point(p.name)
-            plt.plot((vx, px), (vy, py), color='#0000f0', linewidth=2)
+
+            color = 'k'
+            if v.line == p.line:
+                color = LINE_COLORS[v.line]
+            plt.plot((vx, px), (vy, py), color=color, linewidth=4)
 
         plt.draw()
+        print(f"=== POIDS DE L'ACPM : {self.acpm_weight} ===")
 
     def afficher_trajet(self, pcc):
         """
