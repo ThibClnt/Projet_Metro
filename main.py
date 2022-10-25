@@ -21,6 +21,18 @@ class Vertex:
         return f" Vertex : {self.name} ; Parent : {self.root.name} ; "
 
 
+class Arret(Vertex):
+    """
+    Sommet d'un graphe, représentant un arrêt de transports en commun
+    """
+
+    def __init__(self, name=None, line=None, branch=None, terminus=None):
+        super().__init__(name)
+        self.line = line  # Numéro de ligne
+        self.branch = branch  # Identifiant de l'embranchement
+        self.terminus = terminus  # Vrai si c'est un terminus - Faux sinon
+
+
 class Graph:
     """
     Objet qui représente un graphe orienté, avec des méthodes utilitaires pour réaliser l'algorithme de Kruskal
@@ -51,18 +63,6 @@ class Graph:
 
         self.edges[origin][dest] = weight
         self.edges[dest][origin] = weight
-
-
-class Arret(Vertex):
-    """
-    Sommet d'un graphe, représentant un arrêt de transports en commun
-    """
-
-    def __init__(self, name=None, line=None, branch=None, terminus=None):
-        super().__init__(name)
-        self.line = line  # Numéro de ligne
-        self.branch = branch  # Identifiant de l'embranchement
-        self.terminus = terminus  # Vrai si c'est un terminus - Faux sinon
 
 
 ############################################
@@ -390,13 +390,16 @@ def afficher_temps(temps):
     print("Le trajet durera", int(minutes), "m", seccondes, "s (", temps, "s)\n")
 
 
-def afficher_texte_parcours(pcc, graph):
+def afficher_texte_parcours(pcc, graph, temps):
     """
     Affiche les étapes du trajet en console. pcc est le plus court chemin (liste de Arret) et graph est le graphe
     représentant le réseau de transports
     :param pcc: list
     :param graph: Graph
+    :param temps: Temps de parcours
     """
+    print("=======================")
+    afficher_temps(temps)
     print("=== DEBUT DU TRAJET ===")
     i = 0
     var = 0
@@ -448,6 +451,26 @@ def afficher_texte_parcours(pcc, graph):
 ############################################
 # Interface graphique                      #
 ############################################
+LINE_COLORS = {
+    '1': '#ffcd00',
+    '2': '#003da5',
+    '3': '#827a04',
+    '3bis': '#71c5e8',
+    '4': '#c800a1',
+    '5': '#ff7f32',
+    '6': '#71cc98',
+    '7': '#f59bbb',
+    '7bis': '#71cc98',
+    '8': '#dd9cdf',
+    '9': '#b5bd00',
+    '10': '#c69214',
+    '11': '#6e4c1e',
+    '12': '#007a53',
+    '13': '#71c5e8',
+    '14': '#5f249f',
+}
+
+
 class App:
     """
     Coeur de l'application
@@ -500,6 +523,10 @@ class App:
         plt.draw()
 
     def on_click(self, event):
+        """
+        Si le mode est en recherche de trajet, alors permet de mettre à jour les points de départ et d'arrivée si
+        un arrêt est cliqué
+        """
         if self.mode != App.PCC:
             return
 
@@ -515,25 +542,21 @@ class App:
                 if self.start is not None and self.end is not None:
                     self.reset_display()
                     temps, pcc = utilisation_dijkstra(self.start, self.end, self.graph)
-                    afficher_texte_parcours(pcc, self.graph)
+                    afficher_texte_parcours(pcc, self.graph, temps)
                     self.afficher_trajet(pcc)
                 break
 
     def on_press(self, event):
+        """
+        Permet de changer de mode lorsque 'Espace' est pressé
+        """
         if event.key == ' ':
-            self.switch_mode()
-
-    def radio_clicked(self, label):
-        if label == "Plus court chemin" and self.mode == App.ACPM:
-            self.switch_mode()
-        elif label == "Arbre couvrant de poids minimum" and self.mode == App.PCC:
             self.switch_mode()
 
     def switch_mode(self):
         """
         Changement de mode
         """
-        print(f"Changement de {self.mode} à {3 - self.mode}")
         self.mode = 3 - self.mode
         self.reset_display()
 
@@ -578,8 +601,12 @@ class App:
             if i != 0:
                 x0, y0 = x1, y1
 
+            color = "k"
+            if pcc[i].line == pcc[i+1].line:
+                color = LINE_COLORS[pcc[i].line]
+
             x1, y1 = self.recherche_pos_point(pcc[i + 1].name)
-            plt.plot((x0, x1), (y0, y1), color='#ff0000', linewidth=4)
+            plt.plot((x0, x1), (y0, y1), color=color, linewidth=4)
         plt.draw()
 
 
