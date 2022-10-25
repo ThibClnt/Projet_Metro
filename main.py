@@ -273,6 +273,9 @@ def dijkstra(graph, summit):
 
 
 def shortest_path(summit, target_vertex, pred):
+    """
+    Backtracking sur les résultats de Dijkstra
+    """
     arrive = pred[target_vertex]
 
     path = [arrive, target_vertex]
@@ -453,11 +456,6 @@ class App:
     ACPM = 2        # Mode d'affichage de l'arbre couvrant de poids minimum
 
     def __init__(self, path):
-        # Initialisation de l'affichage
-        self.impath = path
-        self._init_display()
-        plt.axes(self.ax)
-
         self.start = None
         self.end = None
         self.mode = App.PCC
@@ -465,6 +463,11 @@ class App:
         self.graph = data_graph()
         self.pos = data_coord()
         self.acpm = []  # Variable destinée
+
+        # Initialisation de l'affichage
+        self.impath = path
+        self._init_display()
+        plt.axes(self.ax)
 
         self.click_callback = self.fig.canvas.mpl_connect('button_press_event', self.on_click)
         self.keyboard_callback = self.fig.canvas.mpl_connect('key_press_event', self.on_press)
@@ -478,6 +481,15 @@ class App:
         self.fig.subplots_adjust(0, 0, 1, 1)
         plt.axis('off')
         self.ax.imshow(im)
+
+        # Points sur les arrêts
+        x, y = [], []
+        for vertex_name in self.pos.values():
+            vx, vy = self.recherche_pos_point(vertex_name)
+            x.append(vx)
+            y.append(vy)
+
+        self.ax.scatter(x, y, c='w', edgecolors='k')
 
     def reset_display(self):
         """
