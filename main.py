@@ -151,6 +151,37 @@ def data_coord():
 
 
 ############################################
+# Connexité                                #
+############################################
+def verifier_connexite(graph: Graph):
+    """
+    Vérifie la connexité du graphe grâce à un parcours en profondeur
+    :param graph: Graphe
+    :return: True si le graphe est connexe
+    """
+    etat, pere = dict(), dict()
+    for vertex in graph.edges.keys():
+        etat[vertex] = False
+
+    parcours_en_profondeur(graph, list(graph.edges.keys())[0], etat)
+    for state in etat.items():
+        if not state:
+            return False
+
+    return True
+
+
+def parcours_en_profondeur(graph, vertex, etat):
+    """
+    Fonction récursive du parcours en profondeur
+    """
+    etat[vertex] = True
+    for successeur in graph.edges[vertex].keys():
+        if not etat[successeur]:
+            parcours_en_profondeur(graph, successeur, etat)
+
+
+############################################
 # Kruskal                                  #
 ############################################
 def find(vertex):
@@ -244,6 +275,9 @@ def argmin_dict(dist):
 
 
 def dijkstra(graph, summit):
+    """
+    Performe l'algorithme de dijkstra sur le le graphe graph
+    """
     vertices = list(graph.keys())
     dist = {}
     pred = {}
@@ -358,6 +392,10 @@ def trouver_terminus(station1, station2, graph):
 
 
 def utilisation_dijkstra(nom_depart, nom_arrive, graph):
+    """
+    Utilise les fonctions dijkstra et shortest_path afin de retourner le temps et le chemin le plus court, entre
+    nom_depart et nom_arrive dans graph
+    """
     # Listes des arrets de meme nom (mais pas de meme ligne) (ex : Chatellet)
     liste_depart = []
     liste_arrive = []
@@ -621,4 +659,5 @@ class App:
 
 if __name__ == '__main__':
     app = App("metrof_r.png")
+    print(f"Le graphe est {'connexe' if verifier_connexite(app.graph) else 'non connexe'}.")
     plt.show()
