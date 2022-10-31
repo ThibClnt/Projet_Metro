@@ -286,6 +286,8 @@ def dijkstra(graph, summit):
         pred[i] = None
 
     dist[summit] = 0
+    pred[summit] = summit
+
     vertices_copy = vertices
 
     while vertices_copy:
