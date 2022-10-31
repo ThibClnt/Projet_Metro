@@ -8,7 +8,8 @@ Participants :
 # Tutoriel d'exécution
 
 ## Prérequis
-L'exécution de l'application se fait à l'aide d'un terminal ouvert dans le répertoire du projet ***Projet_Metro*** et nécessite une version de Python supérieure à **Python 3.6** ainsi que la librairie **Matplotlib**, son installation se faisant par la commande suivante :
+L'exécution de l'application se fait à l'aide d'un terminal ouvert dans le répertoire du projet ***Projet_Metro*** et nécessite une version de Python supérieure à **Python 3.6** ainsi que la librairie **Matplotlib**.
+Son installation se réalise en ouvrant un terminal dans le répaertoire d'installation de python, par la commande suivante :
 > pip install matplotlib
 
 ## Exécution de l'application
